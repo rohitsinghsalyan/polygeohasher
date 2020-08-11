@@ -11,7 +11,7 @@ setuptools.setup(
     description="Convert your polygons into a set of geohashes with min and max resoulution set by users",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/rohitsinghsalyan/polygeohaser",
+    url="https://github.com/rohitsinghsalyan/polygeohasher",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

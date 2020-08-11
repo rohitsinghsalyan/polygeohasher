@@ -1,31 +1,46 @@
 #!/usr/bin/python
-
-# the purpose is to pass a geodataframe and convert it to a list of geohash for a given range of geohash levels
-# with a certain degree of approximation to convert a finer level of geohash to coarser level (based on the % of lower GH member present in the data)
-
-
-#dependies 
 import geohash
 from polygon_geohasher.polygon_geohasher import polygon_to_geohashes, geohashes_to_polygon
 from shapely import *
 import pandas as pd
 import geopandas as gpd
 
-gdf = gpd.read_file("/data/sample.geojson")
+def create_geohash_list(gdf, geohash_level,inner=False):
+    gdf=gdf.copy()
+    gdf['geohash_list'] = gdf['geometry'].apply(lambda x: list(polygon_to_geohashes(x, geohash_level,inner)))
+    gdf = gdf.drop("geometry",axis = 1)
+    return gdf
 
-def poly_to_geohash(p,geohash_level):
-    lst = list(polygon_to_geohashes(p, geohash_level,False))
-    #lst = '~'.join(lst)
-    return lst
+def polygon_geohash_level(gdf, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error=10 , forced_gh_upscale=False):
+    gdf= gdf.copy()
+    gdf['opitimized_geohash_list'] = gdf['geohash_list'].apply(lambda x : __util_geohash_optimizer(x,largest_gh_size, smallest_gh_size, gh_input_level,percentage_error,forced_gh_upscale))
+    data = gdf.drop('geohash_list',axis=1).copy()
+    df = pd.DataFrame(data)
+    df = df.explode('opitimized_geohash_list')
+    df.drop_duplicates('opitimized_geohash_list',inplace=True)
+    return df
 
-gdf['geohash_list'] = gdf['geometry'].apply(poly_to_geohash)
+def geohashes_to_geometry(df):
+    df = df.copy()
+    df['geometry'] = df['opitimized_geohash_list'].apply(lambda x : geohashes_to_polygon([str(x)]))
+    gdf = gpd.GeoDataFrame(df, geometry=df["geometry"])
+    return gdf
 
-gdf = gdf.drop("geometry",axis = 1)
+def optimization_summary(initial_gdf, final_gdf):
+    print("-"*50)
+    print("\t\tOPTIMIZATION SUMMARY")
+    print("-"*50)
+    initial_count = sum([len(i) for i in initial_gdf["geohash_list"]])
+    print("Total Counts of Initial Geohashes : ",initial_count)
+    final_count = len(final_gdf)
+    print("Total Counts of Final Geohashes   : ",final_count)
+    print("Percent of optimization           : ",round(((initial_count - final_count)/initial_count)*100,2),"%")
+    print("-"*50)
 
 # Recursive optimization of the geohash set
-def geohash_level_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_input_level, percent_error=10,forced_gh_upscale = False):
+def __util_geohash_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error,forced_gh_upscale):
     base32 = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm',
-              'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+            'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
     geohashes = set(geohashes)
     geohash_processed_check = set()
     processed_geohash_set = set()
@@ -50,7 +65,6 @@ def geohash_level_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_inp
                 len_desired_reached = True
             else:
                 len_desired_reached = False
-        #     print(gehash,geohash_length)
             # Compress only if geohash length is greater than the min level
             if geohash_length >= largest_gh_size:
                 # Get geohash to generate combinations for
@@ -64,10 +78,8 @@ def geohash_level_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_inp
                     if combinations.issubset(geohashes) or (len(intersect) >= 32 * (1 - percent_error/100) and no_of_cycle < 1 ):
                         # Add part to temporary output
                         processed_geohash_set.add(geohash_1up)
-        #                 print(final_geohashes)
                         # Add part to deleted geohash set
                         geohash_processed_check.add(geohash_1up)
-        #                 print(deletegh)
                     # Else add the geohash to the temp out and deleted set
                     else:
                         geohash_processed_check.add(geohash)
@@ -76,34 +88,11 @@ def geohash_level_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_inp
                             processed_geohash_set.add(geohash[:smallest_gh_size])
                         else:
                             processed_geohash_set.add(geohash)
-    #                 print(len(final_geohashes))
-        geohash_set_size = len(processed_geohash_set)
-        print('no. of geohashes final:',geohash_set_size,'min gh level required',len_desired,'cutoff',cutoff)
         no_of_cycle = no_of_cycle+1
         if len_desired_reached == True or no_of_cycle >= (cutoff):
             flag = False
         geohashes.clear()
             # Temp output moved to the primary geohash set
         geohashes = geohashes.union(processed_geohash_set)
-    geohashes = list(set(geohashes))    
+    geohashes = list(set(geohashes))  
     return geohashes
-
-gdf['opitimed_geohash_list'] = gdf['geohash_list'].apply(lambda x : geohash_level_optimizer(x,5,6,7,10,True))
-
-data = gdf.drop('geohash_list',axis=1).copy()
-
-data = pd.DataFrame(data)
-
-data = data.explode('opitimed_geohash_list')
-
-data.drop_duplicates('opitimed_geohash_list',inplace=True)
-
-def gh_to_poly(gh):
-    return geohashes_to_polygon([str(gh)])
-
-data['geometry'] = data['opitimed_geohash_list'].apply(gh_to_poly)
-gdf_final = gpd.GeoDataFrame(
-    data, geometry=data['geometry'])
-gdf_final.plot()
-
-gdf_final.to_file("/Users/rohitsingh/Documents/Rohit Singh/random data/test_56.geojson",driver='GeoJSON')

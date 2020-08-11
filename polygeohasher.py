@@ -11,9 +11,9 @@ def create_geohash_list(gdf, geohash_level,inner=False):
     gdf = gdf.drop("geometry",axis = 1)
     return gdf
 
-def polygon_geohash_level(gdf, largest_gh_size, smallest_gh_size, gh_input_level ):
+def polygon_geohash_level(gdf, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error=10 , forced_gh_upscale=False):
     gdf= gdf.copy()
-    gdf['opitimized_geohash_list'] = gdf['geohash_list'].apply(lambda x : __util_geohash_optimizer(x,largest_gh_size, smallest_gh_size, gh_input_level,10,True))
+    gdf['opitimized_geohash_list'] = gdf['geohash_list'].apply(lambda x : __util_geohash_optimizer(x,largest_gh_size, smallest_gh_size, gh_input_level,percentage_error,forced_gh_upscale))
     data = gdf.drop('geohash_list',axis=1).copy()
     df = pd.DataFrame(data)
     df = df.explode('opitimized_geohash_list')
@@ -38,7 +38,7 @@ def optimization_summary(initial_gdf, final_gdf):
     print("-"*50)
 
 # Recursive optimization of the geohash set
-def __util_geohash_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_input_level, percent_error=10,forced_gh_upscale = False):
+def __util_geohash_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error,forced_gh_upscale):
     base32 = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm',
             'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
     geohashes = set(geohashes)

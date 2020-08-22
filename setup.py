@@ -18,6 +18,17 @@ setuptools.setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
+    install_requires=[
+          'Fiona>=1.8.13.post1',
+          'Geohash>=1.0',
+          'geopandas>=0.8.1',
+          'numpy>=1.19.1',
+          'pandas>=1.1.0',
+          'polygon-geohasher>=0.0.1',
+          'pyproj>=2.6.1',
+          'python-geohash>=0.8.5',
+          'Shapely>=1.7.0'
+      ],
     python_requires='>=3.6',
 )
 

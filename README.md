@@ -4,21 +4,44 @@ polygeoasher is a python package to implement polygon to geohash and vice versa 
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install polygeohasher.
 
 ```bash
 pip install polygeohasher
+
+#install all dependencies
+pip3 install -r requirements.txt
+
 ```
 
 ## Usage
 
 ```python
 import polygeohasher
+import geopandas as gpd
 
-polygeohasher.create_geohash_list(GeoDataFrame, geohash_level,inner=False) # returns a dataframe with list of geohashes for each geometry
-polygon_geohash_level(GeoDataFrame, largest_gh_size, smallest_gh_size, gh_input_level) # returns optimised list of geohash 
-optimization_summary(initial_gdf, final_gdf) #creates a summary of first and second output
-geohashes_to_geometry(df) # return geometry for a DataFrame with a column - `opitimized_geohash_list` (output from above)
+gdf = gpd.read_file("your geospatial file format") # read your geometry file here
+
+primary_df = polygeohasher.create_geohash_list(gdf, geohash_level,inner=False) # returns a dataframe with list of geohashes for each geometry
+
+secondary_df = polygeohasher.polygon_geohash_level(primary_df, largest_gh_size, smallest_gh_size, gh_input_level) # returns optimised list of geohash 
+
+polygeohasher.optimization_summary(primary_df, secondary_df) #creates a summary of first and second output
+
+'''
+--------------------------------------------------
+            OPTIMIZATION SUMMARY
+--------------------------------------------------
+Total Counts of Initial Geohashes :  2597
+Total Counts of Final Geohashes   :  837
+Percent of optimization           :  67.77 %
+--------------------------------------------------
+'''
+
+geo_df = polygeohasher.geohashes_to_geometry(secondary_df) # return geometry for a DataFrame with a column - `opitimized_geohash_list` (output from above)
+
+geo_df.to_file("your write path.format",driver = "GeoJSON") #write file in your favorite spatial file format
+
 ```
 
 ## Contributing

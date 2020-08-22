@@ -14,7 +14,7 @@ def create_geohash_list(gdf, geohash_level,inner=False):
     gdf = gdf.drop("geometry",axis = 1)
     return gdf
 
-def polygon_geohash_level(gdf, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error=10 , forced_gh_upscale=False):
+def geohash_optimiser(gdf, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error=10 , forced_gh_upscale=False):
     '''Return a list of geohash of optimised geohash levels to cover a ceratin area (Polygon).
     Takes a DataFrame as input with target column conisiting of the geohash list, Desired range of geohash levels,
     input level of geohash and optional error of percentage of geohash optimisation and force optimisation. The output is a DataFrame
@@ -27,17 +27,21 @@ def polygon_geohash_level(gdf, largest_gh_size, smallest_gh_size, gh_input_level
     df.drop_duplicates('opitimized_geohash_list',inplace=True)
     return df
 
-def geohashes_to_geometry(df):
+def geohashes_to_geometry(df,geohash_column_name):
     ''' returns a geo DataFrame for the geohashes to visualise them on a map. the user can save it in any of the Popular 
     formats like ESRI Shapefile, GeoJSON etc.'''
     df = df.copy()
-    df['geometry'] = df['opitimized_geohash_list'].apply(lambda x : geohashes_to_polygon([str(x)]))
+    if type(df[geohash_column_name][0]) == list:
+        df = pd.DataFrame(df)
+        df = df.explode(geohash_column_name)
+    df['geometry'] = df[geohash_column_name].apply(lambda x : geohashes_to_polygon([str(x)]))
+    # df['geometry'] = df['opitimized_geohash_list'].apply(lambda x : geohashes_to_polygon([str(x)]))
     gdf = gpd.GeoDataFrame(df, geometry=df["geometry"])
     return gdf
 
 def optimization_summary(initial_gdf, final_gdf):
-        ''' returns the summary of optimisation of number of geohashes to cover an AREA. The user needs to pass the 
-        two data Frames (Initial Geohash - raw, and optimised one)'''
+    ''' returns the summary of optimisation of number of geohashes to cover an AREA. The user needs to pass the 
+    two data Frames (Initial Geohash - raw, and optimised one)'''
     print("-"*50)
     print("\t\tOPTIMIZATION SUMMARY")
     print("-"*50)
@@ -86,7 +90,7 @@ def __util_geohash_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_in
                     # intersections of ideal vs real geohash childs in a parent geohash
                     intersect = combinations.intersection(geohashes)
                     # condition to process the geohash and add to processed list
-                    if combinations.issubset(geohashes) or (len(intersect) >= 32 * (1 - percent_error/100) and no_of_cycle < 1 ):
+                    if combinations.issubset(geohashes) or (len(intersect) >= 32 * (1 - percentage_error/100) and no_of_cycle < 1 ):
                         # add to processed geohash list
                         processed_geohash_set.add(geohash_1up)
                         # check list for processes geohash

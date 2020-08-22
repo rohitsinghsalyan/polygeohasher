@@ -6,12 +6,19 @@ import pandas as pd
 import geopandas as gpd
 
 def create_geohash_list(gdf, geohash_level,inner=False):
+    '''Return a list of geohash for each individual geometry polygon 
+    when supplied with a geo DataFrame and level of precision for geohash. 
+    The geohash list is added as a list against each geometry.'''
     gdf=gdf.copy()
     gdf['geohash_list'] = gdf['geometry'].apply(lambda x: list(polygon_to_geohashes(x, geohash_level,inner)))
     gdf = gdf.drop("geometry",axis = 1)
     return gdf
 
 def polygon_geohash_level(gdf, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error=10 , forced_gh_upscale=False):
+    '''Return a list of geohash of optimised geohash levels to cover a ceratin area (Polygon).
+    Takes a DataFrame as input with target column conisiting of the geohash list, Desired range of geohash levels,
+    input level of geohash and optional error of percentage of geohash optimisation and force optimisation. The output is a DataFrame
+    with optimised geohashes for each geometry'''
     gdf= gdf.copy()
     gdf['opitimized_geohash_list'] = gdf['geohash_list'].apply(lambda x : __util_geohash_optimizer(x,largest_gh_size, smallest_gh_size, gh_input_level,percentage_error,forced_gh_upscale))
     data = gdf.drop('geohash_list',axis=1).copy()
@@ -21,12 +28,16 @@ def polygon_geohash_level(gdf, largest_gh_size, smallest_gh_size, gh_input_level
     return df
 
 def geohashes_to_geometry(df):
+    ''' returns a geo DataFrame for the geohashes to visualise them on a map. the user can save it in any of the Popular 
+    formats like ESRI Shapefile, GeoJSON etc.'''
     df = df.copy()
     df['geometry'] = df['opitimized_geohash_list'].apply(lambda x : geohashes_to_polygon([str(x)]))
     gdf = gpd.GeoDataFrame(df, geometry=df["geometry"])
     return gdf
 
 def optimization_summary(initial_gdf, final_gdf):
+        ''' returns the summary of optimisation of number of geohashes to cover an AREA. The user needs to pass the 
+        two data Frames (Initial Geohash - raw, and optimised one)'''
     print("-"*50)
     print("\t\tOPTIMIZATION SUMMARY")
     print("-"*50)
@@ -40,16 +51,15 @@ def optimization_summary(initial_gdf, final_gdf):
 # Recursive optimization of the geohash set
 def __util_geohash_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error,forced_gh_upscale):
     base32 = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm',
-            'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+            'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'] #set of hash values to build the geohash
     geohashes = set(geohashes)
     geohash_processed_check = set()
     processed_geohash_set = set()
-    flag = True
-    # Input size less than 32
-    if len(geohashes) == 0:
+    flag = True # setting the flag True to initiate the optimisation
+    if len(geohashes) == 0: #if empty list of geohash is supplied return False
         return False
-    len_desired_reached = False
-    no_of_cycle = 0
+    len_desired_reached = False # Indicator for lenght of desired geohash level reached or not, set to False to start optimisation
+    no_of_cycle = 0 # number of cycles to reach desired geohash level
     if smallest_gh_size < gh_input_level:
         cutoff = (gh_input_level - smallest_gh_size) + (smallest_gh_size - largest_gh_size)
     else:
@@ -65,25 +75,26 @@ def __util_geohash_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_in
                 len_desired_reached = True
             else:
                 len_desired_reached = False
-            # Compress only if geohash length is greater than the min level
+            # cut short geohash only if the string length is greater than largest geohash size (smaller in string length)
             if geohash_length >= largest_gh_size:
-                # Get geohash to generate combinations for
+                # substring value to generate all combination of child geohashes
                 geohash_1up = geohash[:-1]
-                # Proceed only if not already processed
+                # If a geohash has been processed, skip it.
                 if (geohash_1up not in geohash_processed_check) and (geohash not in geohash_processed_check):
-                    # Generate combinations
+                    # Generating combinations
                     combinations = set([geohash_1up + i for i in base32])
-                    # If all generated combinations exist in the input set
+                    # intersections of ideal vs real geohash childs in a parent geohash
                     intersect = combinations.intersection(geohashes)
+                    # condition to process the geohash and add to processed list
                     if combinations.issubset(geohashes) or (len(intersect) >= 32 * (1 - percent_error/100) and no_of_cycle < 1 ):
-                        # Add part to temporary output
+                        # add to processed geohash list
                         processed_geohash_set.add(geohash_1up)
-                        # Add part to deleted geohash set
+                        # check list for processes geohash
                         geohash_processed_check.add(geohash_1up)
-                    # Else add the geohash to the temp out and deleted set
                     else:
+                        #if not add it to processes list anyway
                         geohash_processed_check.add(geohash)
-                        # Forced compression if geohash length is greater than max level after combination check failure
+                        # if forced optimisation is required 
                         if geohash_length >= smallest_gh_size and forced_gh_upscale == True:
                             processed_geohash_set.add(geohash[:smallest_gh_size])
                         else:
@@ -92,7 +103,6 @@ def __util_geohash_optimizer(geohashes, largest_gh_size, smallest_gh_size, gh_in
         if len_desired_reached == True or no_of_cycle >= (cutoff):
             flag = False
         geohashes.clear()
-            # Temp output moved to the primary geohash set
-        geohashes = geohashes.union(processed_geohash_set)
+        geohashes = geohashes.union(processed_geohash_set) #adding the processed list 
     geohashes = list(set(geohashes))  
-    return geohashes
+    return geohashes #retuning final geohash list

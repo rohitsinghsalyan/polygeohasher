@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="polygeohasher",
+    name="polygeohasher-rohitsinghsalyan",
     version="0.0.1",
     author="Rohit Singh, Krishna Khadka",
     author_email="rohitsinghsalyan@gmail.com",
@@ -15,8 +15,10 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
 )
+
+

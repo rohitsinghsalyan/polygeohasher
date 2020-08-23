@@ -17,7 +17,7 @@ pip3 install -r requirements.txt
 ## Usage
 
 ```python
-import polygeohasher
+from polygeohasher import polygeohasher
 import geopandas as gpd
 
 gdf = gpd.read_file("your geospatial file format") # read your geometry file here

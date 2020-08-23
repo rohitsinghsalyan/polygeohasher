@@ -1,5 +1,7 @@
 README.md
 setup.py
+polygeohasher/__init__.py
+polygeohasher/polygeohasher.py
 polygeohasher.egg-info/PKG-INFO
 polygeohasher.egg-info/SOURCES.txt
 polygeohasher.egg-info/dependency_links.txt

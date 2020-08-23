@@ -24,7 +24,7 @@ gdf = gpd.read_file("your geospatial file format") # read your geometry file her
 
 primary_df = polygeohasher.create_geohash_list(gdf, geohash_level,inner=False) # returns a dataframe with list of geohashes for each geometry
 
-secondary_df = polygeohasher.polygon_geohash_level(primary_df, largest_gh_size, smallest_gh_size, gh_input_level) # returns optimised list of geohash 
+secondary_df = polygeohasher.geohash_optimiser(primary_df, largest_gh_size, smallest_gh_size, gh_input_level) # returns optimised list of geohash
 
 polygeohasher.optimization_summary(primary_df, secondary_df) #creates a summary of first and second output
 

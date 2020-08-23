@@ -19,7 +19,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-          'Fiona>=1.8.13.post1',
+          'Fiona>=1.8.13',
           'Geohash>=1.0',
           'geopandas>=0.8.1',
           'numpy>=1.19.1',

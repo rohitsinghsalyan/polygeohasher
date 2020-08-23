@@ -3,3 +3,5 @@ __pycache__
 .DS_Store
 polygeohasher_rohitsinghsalyan.egg-info
 tests
+build
+dist

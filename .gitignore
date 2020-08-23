@@ -1,7 +1,7 @@
 __pycache__
 .vscode
 .DS_Store
-polygeohasher_rohitsinghsalyan.egg-info
+polygeohasher.egg-info/
 tests/
 build/
 dist/

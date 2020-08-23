@@ -44,6 +44,21 @@ geo_df.to_file("your write path.format",driver = "GeoJSON") #write file in your 
 
 ```
 
+## Some visualisations
+
+<img src="example/study_area.png" alt="study_area" width="100%"/>
+
+Study are consist of division of City of Bengaluru in India.
+
+<img src="example/primary_output.png" alt="primary_output" width="100%"/>
+
+Primary Output of geohashes without any optimisation.
+
+<img src="example/secondary_output.png" alt="secondary_output" width="100%"/>
+
+Final Output of geohashes with optimisation of number of geohashes at different levels to cover an area.
+
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 

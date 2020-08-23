@@ -1,0 +1,7 @@
+README.md
+setup.py
+polygeohasher.egg-info/PKG-INFO
+polygeohasher.egg-info/SOURCES.txt
+polygeohasher.egg-info/dependency_links.txt
+polygeohasher.egg-info/requires.txt
+polygeohasher.egg-info/top_level.txt

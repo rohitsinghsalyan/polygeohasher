@@ -38,7 +38,7 @@ Percent of optimization           :  67.77 %
 --------------------------------------------------
 '''
 
-geo_df = polygeohasher.geohashes_to_geometry(secondary_df) # return geometry for a DataFrame with a column - `opitimized_geohash_list` (output from above)
+geo_df = polygeohasher.geohashes_to_geometry(secondary_df,"geohash_column_name") # return geometry for a DataFrame with a column - `opitimized_geohash_list` (output from above)
 
 geo_df.to_file("your write path.format",driver = "GeoJSON") #write file in your favorite spatial file format
 

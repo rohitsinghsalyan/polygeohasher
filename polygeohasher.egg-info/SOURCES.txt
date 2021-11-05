@@ -1,3 +1,4 @@
+LICENCE.txt
 README.md
 setup.py
 polygeohasher/__init__.py

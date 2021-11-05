@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="polygeohasher",
-    version="0.0.4",
+    version="0.0.5",
     author="Rohit Singh, Krishna Khadka",
     author_email="rohitsinghsalyan@gmail.com",
     description="Convert your polygons into a set of geohashes with min and max resoulution set by users",
@@ -18,11 +18,6 @@ setuptools.setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    install_requires=[
-          'Geohash',
-          'geopandas',
-          'polygon-geohasher'],
-    python_requires='>=3.6',
+    install_requires=["Geohash", "geopandas", "polygon-geohasher"],
+    python_requires=">=3.6",
 )
-
-

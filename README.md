@@ -1,6 +1,6 @@
 # polygeohaser
 
-polygeoasher is a python package to implement polygon to geohash and vice versa with optimisation of geohash levels as per the user requirement, with error rate being controlled by the user. 
+polygeoasher is a python package to implement polygon to geohash and vice versa with optimisation of geohash levels as per the user requirement, with error rate being controlled by the user.
 
 ## Installation
 
@@ -24,7 +24,7 @@ gdf = gpd.read_file("your geospatial file format") # read your geometry file her
 
 primary_df = polygeohasher.create_geohash_list(gdf, geohash_level,inner=False) # returns a dataframe with list of geohashes for each geometry
 
-secondary_df = polygeohasher.geohash_optimiser(primary_df, largest_gh_size, smallest_gh_size, gh_input_level) # returns optimised list of geohash
+secondary_df = polygeohasher.geohash_optimizer(primary_df, largest_gh_size, smallest_gh_size, gh_input_level) # returns optimized list of geohash
 
 polygeohasher.optimization_summary(primary_df, secondary_df) #creates a summary of first and second output
 
@@ -56,7 +56,7 @@ Primary Output of geohashes without any optimisation.
 
 <img src="example/secondary_output.png" alt="secondary_output" width="100%"/>
 
-Final Output of geohashes with optimisation of number of geohashes at different levels to cover an area.
+Final Output of geohashes with optimization of number of geohashes at different levels to cover an area.
 
 
 ## Contributing

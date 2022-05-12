@@ -1,6 +1,6 @@
-# polygeohaser
+# polygeohasher
 
-polygeoasher is a python package to implement polygon to geohash and vice versa with optimisation of geohash levels as per the user requirement, with error rate being controlled by the user.
+polygeohasher is a python package to implement polygon to geohash and vice versa with optimisation of geohash levels as per the user requirement, with error rate being controlled by the user.
 
 ## Installation
 

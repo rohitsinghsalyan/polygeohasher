@@ -2,6 +2,7 @@ __pycache__
 .vscode
 .DS_Store
 polygeohasher.egg-info/
-tests/
+tests/__pycache__
 build/
 dist/
+.pytest_cache/

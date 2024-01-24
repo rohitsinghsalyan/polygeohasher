@@ -7,28 +7,47 @@ polygeohasher is a python package to implement polygon to geohash and vice versa
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install polygeohasher.
 
 ```bash
-pip install polygeohasher
-
-#install all dependencies
-pip3 install -r requirements.txt
-
+pip3 install polygeohasher
 ```
-
+Poetry: Add package to lock file
+```bash
+poetry add polygeohasher
+```
 ## Usage
 
 ```python
 from polygeohasher import polygeohasher
 import geopandas as gpd
 
+# read geojson(geometry) file
 gdf = gpd.read_file("your geospatial file format") # read your geometry file here
 
-primary_df = polygeohasher.create_geohash_list(gdf, geohash_level,inner=False) # returns a dataframe with list of geohashes for each geometry
+# initialize polygeohasher
+pgh = polygeohasher.Polygeohasher(gdf)
 
-secondary_df = polygeohasher.geohash_optimizer(primary_df, largest_gh_size, smallest_gh_size, gh_input_level) # returns optimized list of geohash
+# declare geohash levels
+INPUT_GEOHASH_LEVEL = 6
+MINIMUM_GEOHASH_LEVEL = 5
+MAXIMUM_GEOHASH_LEVEL = 7
 
-polygeohasher.optimization_summary(primary_df, secondary_df) #creates a summary of first and second output
+# create a dataframe with list of geohashes for each geometry
+initial_df = pgh.create_geohash_list(INPUT_GEOHASH_LEVEL,inner=False)
 
-'''
+# get a dataframe with optimized list of geohashes
+final_df = pgh.geohash_optimizer(initial_df, MINIMUM_GEOHASH_LEVEL, MAXIMUM_GEOHASH_LEVEL, INPUT_GEOHASH_LEVEL) 
+
+# prints optimization summary
+pgh.optimization_summary(initial_df, final_df)
+
+# convert geohash to geometry
+geo_df = pgh.geohashes_to_geometry(final_df, "geohash_column_name")
+
+# write file in desired spatial file format
+geo_df.to_file("your write path.format",driver = "GeoJSON") 
+
+```
+Following is the optimization summary:
+```bash
 --------------------------------------------------
             OPTIMIZATION SUMMARY
 --------------------------------------------------
@@ -36,12 +55,6 @@ Total Counts of Initial Geohashes :  2597
 Total Counts of Final Geohashes   :  837
 Percent of optimization           :  67.77 %
 --------------------------------------------------
-'''
-
-geo_df = polygeohasher.geohashes_to_geometry(secondary_df,"geohash_column_name") # return geometry for a DataFrame with a column - `opitimized_geohash_list` (output from above)
-
-geo_df.to_file("your write path.format",driver = "GeoJSON") #write file in your favorite spatial file format
-
 ```
 
 ## Some visualisations

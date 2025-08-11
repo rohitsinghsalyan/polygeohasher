@@ -1,151 +1,198 @@
 #!/usr/bin/python
-from polygeohasher.polygon_geohash_convertor import polygon_to_geohashes, geohashes_to_polygon
-from shapely import *
+"""
+Class-based API for polygeohasher package.
+
+This module provides the Polygeohasher class that wraps the functional API
+in an object-oriented interface for users who prefer class-based workflows.
+"""
+
+from typing import Optional
 import pandas as pd
 import geopandas as gpd
 
+from polygeohasher import core
+
 
 class Polygeohasher:
+    """
+    Class-based interface for polygon to geohash conversion and optimization.
+    
+    This class provides an object-oriented wrapper around the functional API,
+    maintaining a GeoDataFrame instance and providing methods that operate on it.
+    
+    Attributes:
+        gdf (gpd.GeoDataFrame): The GeoDataFrame containing geometries to process.
+        
+    Example:
+        >>> import geopandas as gpd
+        >>> from shapely.geometry import Polygon
+        >>> gdf = gpd.GeoDataFrame({'geometry': [Polygon([(0,0), (1,0), (1,1), (0,1)])]})
+        >>> pgh = Polygeohasher(gdf)
+        >>> result = pgh.create_geohash_list(5)
+        >>> 'geohash_list' in result.columns
+        True
+    """
 
-    def __init__(self, gdf) -> None:
+    def __init__(self, gdf: gpd.GeoDataFrame) -> None:
+        """
+        Initialize Polygeohasher with a GeoDataFrame.
+        
+        Args:
+            gdf: GeoDataFrame containing geometry column to process.
+            
+        Raises:
+            TypeError: If gdf is not a GeoDataFrame.
+            ValueError: If gdf does not contain a geometry column and is not empty.
+        """
+        if not isinstance(gdf, gpd.GeoDataFrame):
+            raise TypeError("Input must be a GeoDataFrame")
+        # Allow empty GeoDataFrames for cases where only static methods are used
+        if len(gdf) > 0 and 'geometry' not in gdf.columns:
+            raise ValueError("GeoDataFrame must contain a 'geometry' column")
         self.gdf = gdf
         
-    def create_geohash_list(self, geohash_level, inner=False):
+    def create_geohash_list(self, geohash_level: int, inner: bool = False) -> pd.DataFrame:
         """
-        Return a list of geohash for each individual geometry polygon
-        when supplied with a geo DataFrame and level of precision for geohash.
-        The geohash list is added as a list against each geometry.
+        Convert geometries in the instance GeoDataFrame to geohash lists.
+        
+        This method wraps the functional API create_geohash_list function,
+        operating on the GeoDataFrame stored in this instance.
+        
+        Args:
+            geohash_level: Level of precision for geohash (1-12). Higher values 
+                          provide more detailed coverage.
+            inner: If True, only include geohashes completely inside the polygon.
+                   If False, include geohashes that intersect with the polygon.
+                   Defaults to False.
+        
+        Returns:
+            DataFrame with geohash_list column containing lists of geohashes 
+            for each geometry. The original geometry column is removed.
+            
+        Raises:
+            ValueError: If geohash_level is not between 1 and 12.
+            
+        Example:
+            >>> import geopandas as gpd
+            >>> from shapely.geometry import Polygon
+            >>> gdf = gpd.GeoDataFrame({'geometry': [Polygon([(0,0), (1,0), (1,1), (0,1)])]})
+            >>> pgh = Polygeohasher(gdf)
+            >>> result = pgh.create_geohash_list(5)
+            >>> isinstance(result, pd.DataFrame)
+            True
         """
-        gdf = self.gdf.copy()
-        gdf["geohash_list"] = gdf["geometry"].apply(
-            lambda x: list(polygon_to_geohashes(x, geohash_level, inner))
-        )
-        gdf = gdf.drop("geometry", axis=1)
-        return gdf
+        return core.create_geohash_list(self.gdf, geohash_level, inner)
     
-    def geohash_optimizer(self, gdf_with_geohashes, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error=10, forced_gh_upscale=False):
+    def geohash_optimizer(
+        self, 
+        gdf_with_geohashes: pd.DataFrame, 
+        largest_gh_size: int, 
+        smallest_gh_size: int, 
+        gh_input_level: int, 
+        percentage_error: float = 10, 
+        forced_gh_upscale: bool = False
+    ) -> pd.DataFrame:
         """
-        Return a list of geohash of optimized geohash levels to cover a ceratin area (Polygon).
-        Takes a DataFrame as input with target column conisiting of the geohash list, Desired range of geohash levels,
-        input level of geohash and optional error of percentage of geohash optimisation and force optimisation. The output is a DataFrame
-        with optimized geohashes for each geometry
+        Optimize geohash lists by combining adjacent geohashes into larger ones.
+        
+        This method wraps the functional API geohash_optimizer function to provide
+        an object-oriented interface for geohash optimization.
+        
+        Args:
+            gdf_with_geohashes: DataFrame with geohash_list column to optimize.
+            largest_gh_size: Maximum geohash precision level (minimum string length).
+                           Larger values mean shorter, less precise geohashes.
+            smallest_gh_size: Minimum geohash precision level (maximum string length).
+                            Smaller values mean longer, more precise geohashes.
+            gh_input_level: Input geohash precision level from create_geohash_list.
+            percentage_error: Allowed error percentage for optimization (0-100).
+                            Higher values allow more aggressive optimization.
+                            Defaults to 10.
+            forced_gh_upscale: Force upscaling to smallest_gh_size even when
+                             optimization criteria aren't met. Defaults to False.
+        
+        Returns:
+            DataFrame with optimized_geohash_list column containing optimized 
+            geohashes. Each row represents a unique optimized geohash.
+            
+        Raises:
+            ValueError: If percentage_error is not between 0 and 100.
+            KeyError: If gdf_with_geohashes doesn't contain 'geohash_list' column.
+            
+        Example:
+            >>> df = pd.DataFrame({'geohash_list': [['9q8yy', '9q8yz']]})
+            >>> pgh = Polygeohasher(gpd.GeoDataFrame())  # Empty for this example
+            >>> result = pgh.geohash_optimizer(df, 3, 5, 5)
+            >>> 'optimized_geohash_list' in result.columns
+            True
         """
-
-        gdf = gdf_with_geohashes.copy()
-        gdf["optimized_geohash_list"] = gdf["geohash_list"].apply(
-            lambda x: self.get_optimized_geohashes(
-                x,
-                largest_gh_size,
-                smallest_gh_size,
-                gh_input_level,
-                percentage_error,
-                forced_gh_upscale,
-            )
+        return core.geohash_optimizer(
+            gdf_with_geohashes, 
+            largest_gh_size, 
+            smallest_gh_size, 
+            gh_input_level, 
+            percentage_error, 
+            forced_gh_upscale
         )
-        data = gdf.drop("geohash_list", axis=1).copy()
-        df = pd.DataFrame(data)
-        df = df.explode("optimized_geohash_list")
-        df.drop_duplicates("optimized_geohash_list", inplace=True)
-        return df
+
+    @staticmethod
+    def geohashes_to_geometry(
+        df: pd.DataFrame, 
+        geohash_column_name: str = "optimized_geohash_list"
+    ) -> gpd.GeoDataFrame:
+        """
+        Convert geohashes in a DataFrame to geometries for visualization.
+        
+        This static method wraps the functional API geohashes_to_geometry function,
+        providing a class-based interface for converting geohashes back to geometries.
+        
+        Args:
+            df: DataFrame containing geohash column to convert.
+            geohash_column_name: Name of the column containing geohashes.
+                               Defaults to "optimized_geohash_list".
+        
+        Returns:
+            GeoDataFrame with geometry column suitable for visualization,
+            mapping, and export to spatial formats.
+            
+        Raises:
+            KeyError: If the specified geohash column doesn't exist in df.
+            
+        Example:
+            >>> df = pd.DataFrame({'optimized_geohash_list': ['9q8yy', '9q8yz']})
+            >>> result = Polygeohasher.geohashes_to_geometry(df)
+            >>> isinstance(result, gpd.GeoDataFrame)
+            True
+        """
+        return core.geohashes_to_geometry(df, geohash_column_name)
+
+    @staticmethod
+    def optimization_summary(initial_gdf: pd.DataFrame, final_gdf: pd.DataFrame) -> None:
+        """
+        Print summary statistics of geohash optimization results.
+        
+        This static method wraps the functional API optimization_summary function,
+        providing a class-based interface for displaying optimization statistics.
+        
+        Args:
+            initial_gdf: DataFrame with initial geohash_list column before optimization.
+            final_gdf: DataFrame with optimized geohashes after optimization.
+            
+        Raises:
+            KeyError: If initial_gdf doesn't contain 'geohash_list' column.
+            
+        Example:
+            >>> initial = pd.DataFrame({'geohash_list': [['a', 'b', 'c', 'd']]})
+            >>> final = pd.DataFrame({'optimized_geohash_list': ['ab']})
+            >>> Polygeohasher.optimization_summary(initial, final)  # doctest: +SKIP
+            --------------------------------------------------
+            OPTIMIZATION SUMMARY
+            --------------------------------------------------
+            Total Counts of Initial Geohashes :  4
+            Total Counts of Final Geohashes   :  1
+            Percent of optimization           :  75.0 %
+            --------------------------------------------------
+        """
+        return core.optimization_summary(initial_gdf, final_gdf)
 
 
-    def geohashes_to_geometry(self, df, geohash_column_name="optimized_geohash_list"):
-        """
-        Returns a geo DataFrame for the geohashes to visualise them on a map. 
-        The user can save it in any of the popular formats like ESRI Shapefile, GeoJSON etc.
-        """
-        df = df.copy()
-        if type(df[geohash_column_name][0]) == list:
-            df = pd.DataFrame(df)
-            df = df.explode(geohash_column_name)
-        df["geometry"] = df[geohash_column_name].apply(
-            lambda x: geohashes_to_polygon([str(x)])
-        )
-        # df['geometry'] = df['opitimized_geohash_list'].apply(lambda x : geohashes_to_polygon([str(x)]))
-        gdf = gpd.GeoDataFrame(df, geometry=df["geometry"])
-        return gdf
-
-    def optimization_summary(self, initial_gdf, final_gdf):
-        """
-        Returns the summary of optimization of number of geohashes to cover an area. 
-        The user needs to pass the two data Frames (Initial Geohash - raw, and optimized one)
-        """
-        print("-" * 50 + "\nOPTIMIZATION SUMMARY\n" + "-" * 50)
-        initial_count = sum([len(i) for i in initial_gdf["geohash_list"]])
-        print("Total Counts of Initial Geohashes : ", initial_count)
-        final_count = len(final_gdf)
-        print("Total Counts of Final Geohashes   : ", final_count)
-        print(
-            "Percent of optimization           : ",
-            round(((initial_count - final_count) / initial_count) * 100, 2),
-            "%",
-        )
-        print("-" * 50)
-
-    
-    def get_optimized_geohashes(self, geohashes, largest_gh_size, smallest_gh_size, gh_input_level, percentage_error, forced_gh_upscale):
-        base32 = list("0123456789bcdefghjkmnpqrstuvwxyz")  # set of hash values to build the geohash
-        geohashes = set(geohashes)
-        geohash_processed_check = set()
-        processed_geohash_set = set()
-        flag = True  # setting the flag True to initiate the optimisation
-        if len(geohashes) == 0:  # if empty list of geohash is supplied return False
-            return False
-        len_desired_reached = False  # Indicator for lenght of desired geohash level reached or not, set to False to start optimisation
-        no_of_cycle = 0  # number of cycles to reach desired geohash level
-        if smallest_gh_size < gh_input_level:
-            cutoff = (gh_input_level - smallest_gh_size) + (
-                smallest_gh_size - largest_gh_size
-            )
-        else:
-            cutoff = smallest_gh_size - largest_gh_size
-        while flag == True:
-            processed_geohash_set.clear()
-            geohash_processed_check.clear()
-            geohashes = set(geohashes)
-            len_desired = largest_gh_size
-            for geohash in geohashes:
-                geohash_length = len(geohash)
-                if geohash_length == len_desired or len_desired_reached == True:
-                    len_desired_reached = True
-                else:
-                    len_desired_reached = False
-                # cut short geohash only if the string length is greater than largest geohash size (smaller in string length)
-                if geohash_length >= largest_gh_size:
-                    # substring value to generate all combination of child geohashes
-                    geohash_1up = geohash[:-1]
-                    # If a geohash has been processed, skip it.
-                    if (geohash_1up not in geohash_processed_check) and (
-                        geohash not in geohash_processed_check
-                    ):
-                        # Generating combinations
-                        combinations = set([geohash_1up + i for i in base32])
-                        # intersections of ideal vs real geohash childs in a parent geohash
-                        intersect = combinations.intersection(geohashes)
-                        # condition to process the geohash and add to processed list
-                        if combinations.issubset(geohashes) or (
-                            len(intersect) >= 32 * (1 - percentage_error / 100)
-                            and no_of_cycle < 1
-                        ):
-                            # add to processed geohash list
-                            processed_geohash_set.add(geohash_1up)
-                            # check list for processes geohash
-                            geohash_processed_check.add(geohash_1up)
-                        else:
-                            # if not add it to processes list anyway
-                            geohash_processed_check.add(geohash)
-                            # if forced optimisation is required
-                            if (
-                                geohash_length >= smallest_gh_size
-                                and forced_gh_upscale == True
-                            ):
-                                processed_geohash_set.add(geohash[:smallest_gh_size])
-                            else:
-                                processed_geohash_set.add(geohash)
-            no_of_cycle = no_of_cycle + 1
-            if len_desired_reached == True or no_of_cycle >= (cutoff):
-                flag = False
-            geohashes.clear()
-            geohashes = geohashes.union(processed_geohash_set)  # adding the processed list
-        geohashes = list(set(geohashes))
-        return geohashes  # retuning final geohash list

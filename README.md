@@ -7,11 +7,10 @@ polygeohasher is a python package to implement polygon to geohash and vice versa
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install polygeohasher.
 
 ```bash
-pip3 install polygeohasher
-```
-Poetry: Add package to lock file
-```bash
-poetry add polygeohasher
+pip install polygeohasher
+
+# install all dependencies
+pip3 install -r requirements.txt
 ```
 ## Usage
 
@@ -95,43 +94,6 @@ geo_df = pgh.geohashes_to_geometry(secondary_df, "optimized_geohash_list")
 
 # Step 5: Save the result
 geo_df.to_file("optimized_geohashes.geojson", driver="GeoJSON")
-=======
-# read geojson(geometry) file
-gdf = gpd.read_file("your geospatial file format") # read your geometry file here
-
-# initialize polygeohasher
-pgh = polygeohasher.Polygeohasher(gdf)
-
-# declare geohash levels
-INPUT_GEOHASH_LEVEL = 6
-MINIMUM_GEOHASH_LEVEL = 5
-MAXIMUM_GEOHASH_LEVEL = 7
-
-# create a dataframe with list of geohashes for each geometry
-initial_df = pgh.create_geohash_list(INPUT_GEOHASH_LEVEL,inner=False)
-
-# get a dataframe with optimized list of geohashes
-final_df = pgh.geohash_optimizer(initial_df, MINIMUM_GEOHASH_LEVEL, MAXIMUM_GEOHASH_LEVEL, INPUT_GEOHASH_LEVEL) 
-
-# prints optimization summary
-pgh.optimization_summary(initial_df, final_df)
-
-# convert geohash to geometry
-geo_df = pgh.geohashes_to_geometry(final_df, "geohash_column_name")
-
-# write file in desired spatial file format
-geo_df.to_file("your write path.format",driver = "GeoJSON") 
-
-```
-Following is the optimization summary:
-```bash
---------------------------------------------------
-            OPTIMIZATION SUMMARY
---------------------------------------------------
-Total Counts of Initial Geohashes :  2597
-Total Counts of Final Geohashes   :  837
-Percent of optimization           :  67.77 %
---------------------------------------------------
 ```
 
 ### API Reference

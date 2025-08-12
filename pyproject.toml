@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "polygeohasher"
-version = "1.0.0"
+version = "1.1.0"
 description = "A complete package to work with polygons and geohashes. Optimisation of Geohash levels to cover and area with % error controlled by user. Also allows to convert geohases to polygons."
 authors = ["krishna khadka <krishnakhadka2802@gmail.com>", "rohit singh <rohitsinghsalyan@gmail.com"]
 readme = "README.md"
